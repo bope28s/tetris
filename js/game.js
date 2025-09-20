@@ -45,6 +45,48 @@ class TetrisGame {
         
         this.initBoard();
         this.setupEventListeners();
+        
+        // 플레이어 2인 경우 AI 로직 초기화
+        if (this.isMultiplayer && this.playerId === 2) {
+            this.initAI();
+        }
+    }
+    
+    // AI 로직 초기화 (플레이어 2용)
+    initAI() {
+        console.log('AI 플레이어 초기화');
+        this.aiMoveTimer = 0;
+        this.aiMoveInterval = 500; // 0.5초마다 AI 행동
+    }
+    
+    // AI 업데이트 (플레이어 2용)
+    updateAI() {
+        if (!this.isPlaying || this.isPaused || !this.currentBlock) return;
+        
+        this.aiMoveTimer += 16;
+        
+        if (this.aiMoveTimer >= this.aiMoveInterval) {
+            // 간단한 AI: 랜덤하게 이동하거나 회전
+            const actions = ['left', 'right', 'rotate', 'drop'];
+            const action = actions[Math.floor(Math.random() * actions.length)];
+            
+            switch (action) {
+                case 'left':
+                    this.moveBlock(-1);
+                    break;
+                case 'right':
+                    this.moveBlock(1);
+                    break;
+                case 'rotate':
+                    this.rotateBlock();
+                    break;
+                case 'drop':
+                    this.dropBlock();
+                    break;
+            }
+            
+            this.aiMoveTimer = 0;
+        }
     }
     
     // 캔버스 크기 정규화
@@ -93,9 +135,19 @@ class TetrisGame {
     
     // 이벤트 리스너 설정
     setupEventListeners() {
+        // 멀티플레이어에서는 플레이어 1만 키보드 제어
+        // 플레이어 2는 AI 또는 네트워크 제어
         if (!this.isMultiplayer || this.playerId === 1) {
-            document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-            document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+            // 고유한 이벤트 핸들러 생성 (다른 인스턴스와 분리)
+            this.keyDownHandler = (e) => this.handleKeyDown(e);
+            this.keyUpHandler = (e) => this.handleKeyUp(e);
+            
+            document.addEventListener('keydown', this.keyDownHandler);
+            document.addEventListener('keyup', this.keyUpHandler);
+            
+            console.log(`키보드 이벤트 리스너 설정 완료 - 플레이어 ${this.playerId}`);
+        } else {
+            console.log(`플레이어 ${this.playerId}는 AI 제어 - 키보드 이벤트 없음`);
         }
     }
     
@@ -199,11 +251,18 @@ class TetrisGame {
                 clearInterval(this.gameLoop);
             }
             
+            // 각 플레이어별로 독립적인 게임 루프 생성
+            const loopId = `gameLoop_${this.playerId}_${Date.now()}`;
+            this.gameLoopId = loopId;
+            
             this.gameLoop = setInterval(() => {
-                if (!this.isPaused && this.isPlaying) {
+                // 다른 인스턴스의 루프와 구분하기 위한 ID 체크
+                if (this.gameLoopId === loopId && !this.isPaused && this.isPlaying) {
                     this.update();
                 }
             }, 16); // 60 FPS
+            
+            console.log(`독립적인 게임 루프 시작 - 플레이어 ${this.playerId}, ID: ${loopId}`);
             
             console.log('게임 루프 시작 완료');
             
@@ -228,6 +287,16 @@ class TetrisGame {
         if (this.gameLoop) {
             clearInterval(this.gameLoop);
         }
+        
+        // 이벤트 리스너 제거 (메모리 누수 방지)
+        if (this.keyDownHandler) {
+            document.removeEventListener('keydown', this.keyDownHandler);
+        }
+        if (this.keyUpHandler) {
+            document.removeEventListener('keyup', this.keyUpHandler);
+        }
+        
+        console.log(`게임 정지 및 이벤트 리스너 제거 완료 - 플레이어 ${this.playerId}`);
     }
     
     // 새 블록 생성
@@ -632,8 +701,13 @@ class TetrisGame {
         
         // 현재 블록이 없으면 업데이트하지 않음
         if (!this.currentBlock) {
-            console.warn('현재 블록이 없어서 업데이트 건너뜀');
+            console.warn(`플레이어 ${this.playerId}: 현재 블록이 없어서 업데이트 건너뜀`);
             return;
+        }
+        
+        // AI 업데이트 (플레이어 2인 경우)
+        if (this.isMultiplayer && this.playerId === 2) {
+            this.updateAI();
         }
         
         this.dropTime += 16;
