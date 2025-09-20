@@ -1,0 +1,32 @@
+{
+  "name": "tetris-game",
+  "version": "1.0.0",
+  "description": "Modern Tetris game with single and multiplayer modes",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "start": "python -m http.server 8000",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "tetris",
+    "game",
+    "javascript",
+    "html5",
+    "canvas",
+    "pwa",
+    "multiplayer",
+    "webrtc"
+  ],
+  "author": "Tetris Game Developer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/tetris-game.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/tetris-game/issues"
+  },
+  "homepage": "https://github.com/your-username/tetris-game#readme"
+}
