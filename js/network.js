@@ -35,14 +35,20 @@ class NetworkManager {
         console.log('상대방 연결을 기다리는 중... (방 코드를 공유하세요)');
         
         // 실제 상대방이 참가할 때까지 대기
-        // 2인 플레이 시뮬레이션을 위해 30초 후 자동 연결
+        // 플랫폼에 관계없이 일정 시간 대기
+        const waitTime = 30000; // 30초
+        console.log(`${waitTime/1000}초 동안 상대방을 기다립니다...`);
+        
         this.waitingTimeout = setTimeout(() => {
-            console.log('시뮬레이션: 30초 후 AI 상대방 자동 연결');
+            console.log('⏰ 대기 시간 종료 - AI 상대방 자동 연결');
             this.isConnected = true;
             if (this.onConnectionEstablished) {
                 this.onConnectionEstablished();
             }
-        }, 30000); // 30초 후 자동 연결
+        }, waitTime);
+        
+        // 대기 상태 표시를 위한 카운트다운
+        this.startWaitingCountdown(waitTime);
         
         return this.roomCode;
     }
@@ -197,8 +203,38 @@ class NetworkManager {
         });
     }
     
+    // 대기 카운트다운
+    startWaitingCountdown(totalTime) {
+        let remainingTime = totalTime;
+        const roomCodeElement = document.getElementById('room-code-section');
+        
+        const countdown = setInterval(() => {
+            remainingTime -= 1000;
+            const seconds = Math.ceil(remainingTime / 1000);
+            
+            if (roomCodeElement) {
+                const waitingText = roomCodeElement.querySelector('p:last-child');
+                if (waitingText) {
+                    waitingText.textContent = `상대방을 기다리는 중... (${seconds}초 후 AI 상대방 자동 연결)`;
+                }
+            }
+            
+            if (remainingTime <= 0 || this.isConnected) {
+                clearInterval(countdown);
+            }
+        }, 1000);
+        
+        this.countdownInterval = countdown;
+    }
+    
     // 연결 종료
     disconnect() {
+        if (this.waitingTimeout) {
+            clearTimeout(this.waitingTimeout);
+        }
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
         if (this.dataChannel) {
             this.dataChannel.close();
         }

@@ -232,6 +232,12 @@ class TetrisGame {
     
     // 새 블록 생성
     spawnNewBlock() {
+        // 이미 현재 블록이 있다면 생성하지 않음 (중복 방지)
+        if (this.currentBlock && this.isPlaying) {
+            console.warn('이미 현재 블록이 존재함 - 중복 생성 방지');
+            return;
+        }
+        
         if (!this.nextBlock) {
             this.nextBlock = getRandomBlock();
         }
@@ -240,12 +246,16 @@ class TetrisGame {
         this.currentBlock.x = Math.floor(this.BOARD_WIDTH / 2) - 2;
         this.currentBlock.y = 0;
         
+        // 새로운 다음 블록 생성
         this.nextBlock = getRandomBlock();
-        // 고스트 블록 제거됨
+        
+        console.log(`새 블록 스폰: ${this.currentBlock.type} at (${this.currentBlock.x}, ${this.currentBlock.y})`);
+        console.log(`다음 블록: ${this.nextBlock.type}`);
         
         // 게임 오버 체크
         if (this.isCollision(this.currentBlock)) {
             this.gameOver();
+            return;
         }
         
         this.drawNextBlock();
@@ -333,7 +343,12 @@ class TetrisGame {
     
     // 블록 고정
     lockBlock() {
-        if (!this.currentBlock) return;
+        if (!this.currentBlock) {
+            console.warn('고정할 현재 블록이 없음');
+            return;
+        }
+        
+        console.log(`블록 고정: ${this.currentBlock.type} at (${this.currentBlock.x}, ${this.currentBlock.y})`);
         
         const shape = this.currentBlock.getCurrentShape();
         
@@ -350,6 +365,9 @@ class TetrisGame {
                 }
             }
         }
+        
+        // 현재 블록을 null로 설정 (중복 생성 방지)
+        this.currentBlock = null;
         
         this.clearLines();
         this.spawnNewBlock();
@@ -610,7 +628,13 @@ class TetrisGame {
     
     // 게임 업데이트
     update() {
-        if (this.isGameOver) return;
+        if (this.isGameOver || !this.isPlaying) return;
+        
+        // 현재 블록이 없으면 업데이트하지 않음
+        if (!this.currentBlock) {
+            console.warn('현재 블록이 없어서 업데이트 건너뜀');
+            return;
+        }
         
         this.dropTime += 16;
         
@@ -684,13 +708,23 @@ class TetrisGame {
     drawNextBlock() {
         if (!this.nextCtx || !this.nextBlock) return;
         
+        // 캔버스 클리어
         this.nextCtx.fillStyle = '#000';
         this.nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
         const centerX = this.nextCanvas.width / 2;
         const centerY = this.nextCanvas.height / 2;
-        const cellSize = this.isMultiplayer ? 15 : 20;
         
+        // 멀티플레이어에서 더 큰 셀 크기 사용 (흐림 방지)
+        const cellSize = this.isMultiplayer ? 18 : 20;
+        
+        // 고해상도 렌더링을 위한 설정
+        this.nextCtx.imageSmoothingEnabled = false;
+        this.nextCtx.webkitImageSmoothingEnabled = false;
+        this.nextCtx.mozImageSmoothingEnabled = false;
+        this.nextCtx.msImageSmoothingEnabled = false;
+        
+        console.log(`다음 블록 그리기: ${this.nextBlock.type}, 셀 크기: ${cellSize}`);
         drawMiniBlock(this.nextCtx, this.nextBlock, cellSize, centerX, centerY);
     }
     
