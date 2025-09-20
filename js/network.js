@@ -31,14 +31,18 @@ class NetworkManager {
         
         console.log(`방 생성 완료: ${this.roomCode}`);
         
-        // 상대방 연결 시뮬레이션 (30초 후 자동 연결)
-        setTimeout(() => {
-            console.log('시뮬레이션: 상대방 연결됨');
+        // 상대방 연결 대기 (실제로 대기)
+        console.log('상대방 연결을 기다리는 중... (방 코드를 공유하세요)');
+        
+        // 실제 상대방이 참가할 때까지 대기
+        // 2인 플레이 시뮬레이션을 위해 30초 후 자동 연결
+        this.waitingTimeout = setTimeout(() => {
+            console.log('시뮬레이션: 30초 후 AI 상대방 자동 연결');
             this.isConnected = true;
             if (this.onConnectionEstablished) {
                 this.onConnectionEstablished();
             }
-        }, 2000); // 2초 후 자동 연결
+        }, 30000); // 30초 후 자동 연결
         
         return this.roomCode;
     }

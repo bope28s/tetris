@@ -288,7 +288,11 @@ class TetrisApp {
             
             // 연결 대기
             window.networkManager.setConnectionCallbacks(
-                () => this.startMultiplayerGame(),
+                () => {
+                    console.log('상대방 연결됨! 게임 시작');
+                    alert('🎮 상대방이 연결되었습니다! 게임을 시작합니다.');
+                    this.startMultiplayerGame();
+                },
                 () => this.handleConnectionLost()
             );
             
@@ -550,9 +554,14 @@ function showScreen(screenId) {
         
         screens.forEach(screen => {
             screen.classList.remove('active');
-            // CSS 우선순위를 위해 더 강력한 스타일 적용
-            screen.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; z-index: -1000 !important;';
-            console.log(`  - ${screen.id} 비활성화`);
+            // 더 강력한 숨김 처리
+            screen.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; z-index: -1000 !important; position: absolute !important; left: -9999px !important; top: -9999px !important; width: 0 !important; height: 0 !important; overflow: hidden !important;';
+            
+            // DOM에서 완전히 제거하지 않고 숨김 처리
+            screen.setAttribute('aria-hidden', 'true');
+            screen.style.pointerEvents = 'none';
+            
+            console.log(`  - ${screen.id} 완전 비활성화`);
         });
         
         const targetScreen = document.getElementById(screenId);
@@ -560,14 +569,27 @@ function showScreen(screenId) {
             // 약간의 지연을 두고 활성화 (CSS 전환 완료 대기)
             setTimeout(() => {
                 targetScreen.classList.add('active');
+                targetScreen.removeAttribute('aria-hidden');
+                
                 // 강제로 스타일 적용 - CSS보다 우선순위 높게
                 if (screenId === 'game-screen') {
-                    targetScreen.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; z-index: 2000 !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100vh !important; justify-content: center !important; align-items: flex-start !important; padding: 20px !important; overflow-y: auto !important;';
+                    targetScreen.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; z-index: 2000 !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100vh !important; justify-content: center !important; align-items: flex-start !important; padding: 20px !important; overflow-y: auto !important; pointer-events: auto !important;';
                 } else {
-                    targetScreen.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; z-index: 2000 !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100vh !important; justify-content: center !important; align-items: center !important;';
+                    targetScreen.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; z-index: 2000 !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100vh !important; justify-content: center !important; align-items: center !important; pointer-events: auto !important;';
                 }
-                console.log(`✅ ${screenId} 활성화 완료`);
-            }, 10);
+                
+                console.log(`✅ ${screenId} 완전 활성화 완료`);
+                
+                // 추가 확인: 다른 화면들이 정말 숨겨졌는지 체크
+                const otherScreens = document.querySelectorAll('.screen:not(.active)');
+                otherScreens.forEach(screen => {
+                    if (screen.style.display !== 'none') {
+                        console.warn(`⚠️ ${screen.id}가 아직 보임 - 강제 숨김`);
+                        screen.style.display = 'none';
+                    }
+                });
+                
+            }, 50); // 지연 시간을 50ms로 증가
         } else {
             console.error(`❌ 화면을 찾을 수 없음: ${screenId}`);
         }

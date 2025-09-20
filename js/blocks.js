@@ -16,12 +16,16 @@ class TetrisBlock {
 
     // 블록 회전
     rotate() {
+        const oldRotation = this.rotation;
         this.rotation = (this.rotation + 1) % this.shape.length;
+        console.log(`블록 회전: ${this.type}, ${oldRotation} → ${this.rotation}`);
     }
 
     // 블록 회전 되돌리기
     unrotate() {
+        const oldRotation = this.rotation;
         this.rotation = (this.rotation - 1 + this.shape.length) % this.shape.length;
+        console.log(`블록 회전 되돌리기: ${this.type}, ${oldRotation} → ${this.rotation}`);
     }
 
     // 블록 복사
@@ -217,7 +221,16 @@ const BLOCK_SHAPES = {
 // 랜덤 블록 생성
 function getRandomBlock() {
     const type = BLOCK_TYPES[Math.floor(Math.random() * BLOCK_TYPES.length)];
-    return new TetrisBlock(type);
+    const block = new TetrisBlock(type);
+    
+    // 블록 유효성 검사
+    if (!block.shape || !block.color) {
+        console.error('잘못된 블록 생성:', type);
+        return new TetrisBlock('I'); // 기본 블록 반환
+    }
+    
+    console.log(`새 블록 생성: ${type}, 회전 상태: ${block.rotation}`);
+    return block;
 }
 
 // 3D 입체감 블록 렌더링 함수
