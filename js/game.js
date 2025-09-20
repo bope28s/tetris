@@ -247,6 +247,9 @@ class TetrisGame {
             
             console.log('게임 상태 초기화 완료');
             
+            // 첫 블록 생성 (한 번만)
+            this.currentBlock = null;
+            this.nextBlock = null;
             this.spawnNewBlock();
             console.log('첫 블록 생성 완료');
             
@@ -272,9 +275,11 @@ class TetrisGame {
             
             console.log('게임 루프 시작 완료');
             
-            // 첫 번째 그리기
-            this.draw();
-            console.log('첫 화면 그리기 완료');
+            // 첫 번째 그리기 (한 번만)
+            setTimeout(() => {
+                this.draw();
+                console.log('첫 화면 그리기 완료');
+            }, 100);
             
         } catch (error) {
             console.error('게임 시작 중 오류 발생:', error);
@@ -314,8 +319,8 @@ class TetrisGame {
         }
         
         // 이미 현재 블록이 있다면 생성하지 않음 (중복 방지)
-        if (this.currentBlock && this.isPlaying) {
-            console.warn(`${this.instanceId}: 이미 현재 블록이 존재함 - 중복 생성 방지`);
+        if (this.currentBlock) {
+            console.warn(`${this.instanceId}: 이미 현재 블록이 존재함 (${this.currentBlock.type}) - 중복 생성 방지`);
             return;
         }
         
@@ -768,7 +773,14 @@ class TetrisGame {
             this.dropTime = 0;
         }
         
-        this.draw();
+        // 렌더링 빈도 제한 (깜빡임 방지)
+        if (!this.lastDrawTime) this.lastDrawTime = 0;
+        const now = Date.now();
+        
+        if (now - this.lastDrawTime >= 33) { // 30 FPS로 제한
+            this.draw();
+            this.lastDrawTime = now;
+        }
     }
     
     // 게임 렌더링
@@ -796,9 +808,10 @@ class TetrisGame {
             this.drawBoard();
             
             // 현재 블록 그리기 (하나만 그리기)
-            if (this.currentBlock && !this.isSpawning) {
-                console.log(`${this.instanceId}: 현재 블록 렌더링: ${this.currentBlock.type}`);
+            if (this.currentBlock && !this.isSpawning && this.isPlaying) {
                 this.drawBlockSafe(this.currentBlock);
+            } else if (!this.currentBlock) {
+                console.log(`${this.instanceId}: 현재 블록 없음 - 렌더링 건너뜀`);
             }
             
         } catch (error) {
