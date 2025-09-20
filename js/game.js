@@ -42,6 +42,8 @@ class TetrisGame {
         this.isGameOver = false;
         this.isPaused = false;
         this.isPlaying = false;
+        this.isSpawning = false; // 블록 생성 중복 방지 플래그
+        this.isRendering = false; // 렌더링 중복 방지 플래그
         
         // 키 입력 상태
         this.keys = {};
@@ -305,33 +307,53 @@ class TetrisGame {
     
     // 새 블록 생성
     spawnNewBlock() {
+        // 블록 생성 중복 방지를 위한 플래그 체크
+        if (this.isSpawning) {
+            console.warn(`${this.instanceId}: 블록 생성 중 - 중복 호출 방지`);
+            return;
+        }
+        
         // 이미 현재 블록이 있다면 생성하지 않음 (중복 방지)
         if (this.currentBlock && this.isPlaying) {
-            console.warn('이미 현재 블록이 존재함 - 중복 생성 방지');
+            console.warn(`${this.instanceId}: 이미 현재 블록이 존재함 - 중복 생성 방지`);
             return;
         }
         
-        if (!this.nextBlock) {
+        this.isSpawning = true;
+        console.log(`${this.instanceId}: 새 블록 생성 시작`);
+        
+        try {
+            if (!this.nextBlock) {
+                this.nextBlock = this.getRandomBlockSafe();
+            }
+            
+            // 이전 currentBlock 완전히 제거
+            this.currentBlock = null;
+            
+            // 새로운 현재 블록 설정
+            this.currentBlock = this.nextBlock;
+            this.currentBlock.x = Math.floor(this.BOARD_WIDTH / 2) - 2;
+            this.currentBlock.y = 0;
+            
+            // 새로운 다음 블록 생성
             this.nextBlock = this.getRandomBlockSafe();
+            
+            console.log(`${this.instanceId}: 새 블록 스폰: ${this.currentBlock.type} at (${this.currentBlock.x}, ${this.currentBlock.y})`);
+            console.log(`${this.instanceId}: 다음 블록: ${this.nextBlock.type}`);
+            
+            // 게임 오버 체크
+            if (this.isCollision(this.currentBlock)) {
+                this.gameOver();
+                return;
+            }
+            
+            this.drawNextBlock();
+            
+        } catch (error) {
+            console.error(`${this.instanceId}: 블록 생성 오류:`, error);
+        } finally {
+            this.isSpawning = false;
         }
-        
-        this.currentBlock = this.nextBlock;
-        this.currentBlock.x = Math.floor(this.BOARD_WIDTH / 2) - 2;
-        this.currentBlock.y = 0;
-        
-        // 새로운 다음 블록 생성
-        this.nextBlock = this.getRandomBlockSafe();
-        
-        console.log(`새 블록 스폰: ${this.currentBlock.type} at (${this.currentBlock.x}, ${this.currentBlock.y})`);
-        console.log(`다음 블록: ${this.nextBlock.type}`);
-        
-        // 게임 오버 체크
-        if (this.isCollision(this.currentBlock)) {
-            this.gameOver();
-            return;
-        }
-        
-        this.drawNextBlock();
     }
     
     // 안전한 랜덤 블록 생성 (인스턴스별 독립)
@@ -455,11 +477,20 @@ class TetrisGame {
             }
         }
         
-        // 현재 블록을 null로 설정 (중복 생성 방지)
+        // 현재 블록을 완전히 제거 (중복 방지)
+        const lockedBlockType = this.currentBlock.type;
         this.currentBlock = null;
         
+        console.log(`${this.instanceId}: ${lockedBlockType} 블록 고정 완료, 새 블록 생성 예정`);
+        
         this.clearLines();
-        this.spawnNewBlock();
+        
+        // 약간의 지연을 두고 새 블록 생성 (렌더링 안정화)
+        setTimeout(() => {
+            if (!this.currentBlock && this.isPlaying) {
+                this.spawnNewBlock();
+            }
+        }, 50);
         
         // 블록 착지 효과음 재생
         if (window.audioManager) {
@@ -742,21 +773,40 @@ class TetrisGame {
     
     // 게임 렌더링
     draw() {
-        // 캔버스 클리어
-        this.ctx.fillStyle = '#000';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // 렌더링 중복 방지
+        if (this.isRendering) {
+            console.warn(`${this.instanceId}: 렌더링 중 - 중복 호출 방지`);
+            return;
+        }
         
-        // 보드 그리드 그리기
-        this.drawGrid();
+        this.isRendering = true;
         
-        // 고정된 블록들 그리기
-        this.drawBoard();
-        
-        // 고스트 블록 제거됨
-        
-        // 현재 블록 그리기 (인스턴스별 독립 렌더링)
-        if (this.currentBlock) {
-            this.drawBlockSafe(this.currentBlock);
+        try {
+            // 캔버스 상태 저장
+            this.ctx.save();
+            
+            // 캔버스 클리어
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // 보드 그리드 그리기
+            this.drawGrid();
+            
+            // 고정된 블록들 그리기
+            this.drawBoard();
+            
+            // 현재 블록 그리기 (하나만 그리기)
+            if (this.currentBlock && !this.isSpawning) {
+                console.log(`${this.instanceId}: 현재 블록 렌더링: ${this.currentBlock.type}`);
+                this.drawBlockSafe(this.currentBlock);
+            }
+            
+        } catch (error) {
+            console.error(`${this.instanceId}: 렌더링 오류:`, error);
+        } finally {
+            // 캔버스 상태 복원
+            this.ctx.restore();
+            this.isRendering = false;
         }
     }
     
