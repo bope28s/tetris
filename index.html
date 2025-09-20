@@ -173,8 +173,16 @@
         <div class="menu-container">
             <h1>테트리스</h1>
             <div class="menu-buttons">
-                <button id="single-player-btn" class="menu-btn">1인 플레이</button>
-                <button id="multiplayer-btn" class="menu-btn">2인 플레이</button>
+                <button id="single-player-btn" class="menu-btn" 
+                        onclick="handleSinglePlayerClick(event)" 
+                        style="pointer-events: auto !important; opacity: 1 !important; cursor: pointer !important;">
+                    1인 플레이
+                </button>
+                <button id="multiplayer-btn" class="menu-btn" 
+                        onclick="handleMultiPlayerClick(event)"
+                        style="pointer-events: auto !important; opacity: 1 !important; cursor: pointer !important;">
+                    2인 플레이
+                </button>
             </div>
         </div>
     </div>
@@ -270,6 +278,63 @@
             </div>
         </div>
     </div>
+
+    <!-- 인라인 이벤트 핸들러 (간섭 방지) -->
+    <script>
+        // 전역 인라인 이벤트 핸들러들
+        function handleSinglePlayerClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const sessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            console.log('🎯 인라인 1인 플레이 클릭 - 세션:', sessionId);
+            
+            // 버튼 강제 활성화
+            const btn = event.target;
+            btn.disabled = false;
+            btn.style.cssText = 'pointer-events: auto !important; opacity: 1 !important; cursor: pointer !important;';
+            
+            // 앱이 있다면 메서드 호출
+            if (window.tetrisApp && typeof window.tetrisApp.startSinglePlayer === 'function') {
+                try {
+                    window.tetrisApp.startSinglePlayer();
+                } catch (error) {
+                    console.error('1인 플레이 시작 오류:', error);
+                }
+            } else {
+                console.warn('TetrisApp이 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                setTimeout(() => handleSinglePlayerClick(event), 500);
+            }
+        }
+        
+        function handleMultiPlayerClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const sessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            console.log('🎯 인라인 2인 플레이 클릭 - 세션:', sessionId);
+            
+            // 버튼 강제 활성화
+            const btn = event.target;
+            btn.disabled = false;
+            btn.style.cssText = 'pointer-events: auto !important; opacity: 1 !important; cursor: pointer !important;';
+            
+            // 앱이 있다면 메서드 호출
+            if (window.tetrisApp && typeof window.tetrisApp.showMultiplayerMenu === 'function') {
+                try {
+                    window.tetrisApp.showMultiplayerMenu();
+                } catch (error) {
+                    console.error('2인 플레이 시작 오류:', error);
+                }
+            } else {
+                console.warn('TetrisApp이 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                setTimeout(() => handleMultiPlayerClick(event), 500);
+            }
+        }
+        
+        // 전역 tetrisApp 참조 설정
+        window.tetrisApp = null;
+    </script>
 
     <!-- CSS 로드 확인 및 백업 스타일 -->
     <script>

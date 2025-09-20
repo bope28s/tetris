@@ -576,26 +576,41 @@ function showScreen(screenId) {
     }
 }
 
-// 애플리케이션 초기화 (각 탭/창별로 독립적)
+// 애플리케이션 초기화 (각 탭/창별로 완전 독립적)
 let tetrisApp;
 
+// 전역 상태 격리를 위한 네임스페이스
+window.tetrisNamespace = window.tetrisNamespace || {};
+const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+window.tetrisNamespace[sessionId] = {};
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 DOM 로드 완료 - 초기화 시작');
+    console.log('🚀 DOM 로드 완료 - 초기화 시작, 세션:', sessionId);
     
     try {
         console.log('📝 TetrisApp 클래스 생성 시도...');
         
-        // 각 브라우저 탭/창마다 독립적인 인스턴스 생성
+        // 완전히 독립적인 인스턴스 생성
         tetrisApp = new TetrisApp();
-        console.log('✅ TetrisApp 초기화 완료');
+        tetrisApp.globalSessionId = sessionId;
+        window.tetrisNamespace[sessionId].app = tetrisApp;
         
-        // 오디오 매니저 초기화
+        // 전역 참조 설정 (인라인 이벤트 핸들러용)
+        window.tetrisApp = tetrisApp;
+        
+        console.log('✅ TetrisApp 초기화 완료, 글로벌 세션:', sessionId);
+        
+        // 오디오 매니저 초기화 (세션별 분리)
         console.log('🎵 AudioManager 초기화 시도...');
         try {
-            window.audioManager = new AudioManager();
-            console.log('✅ AudioManager 초기화 완료');
+            const audioManager = new AudioManager();
+            window.tetrisNamespace[sessionId].audioManager = audioManager;
+            // 하위 호환성을 위해 전역에도 설정 (하지만 세션별로 분리됨)
+            window.audioManager = audioManager;
+            console.log('✅ AudioManager 초기화 완료, 세션:', sessionId);
         } catch (audioError) {
             console.warn('⚠️ AudioManager 초기화 실패 (게임은 계속 진행됩니다):', audioError);
+            window.tetrisNamespace[sessionId].audioManager = null;
             window.audioManager = null;
         }
         
@@ -626,6 +641,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         console.log('🎯 모든 초기화 완료!');
+        
+        // 즉시 버튼 강제 활성화
+        setTimeout(() => {
+            const singleBtn = document.getElementById('single-player-btn');
+            const multiBtn = document.getElementById('multiplayer-btn');
+            
+            if (singleBtn) {
+                singleBtn.disabled = false;
+                singleBtn.style.cssText = 'pointer-events: auto !important; opacity: 1 !important; cursor: pointer !important;';
+                console.log('🔧 초기화 후 1인 플레이 버튼 강제 활성화');
+            }
+            
+            if (multiBtn) {
+                multiBtn.disabled = false;
+                multiBtn.style.cssText = 'pointer-events: auto !important; opacity: 1 !important; cursor: pointer !important;';
+                console.log('🔧 초기화 후 2인 플레이 버튼 강제 활성화');
+            }
+        }, 100);
         
     } catch (error) {
         console.error('❌ 초기화 중 치명적 오류 발생:', error);
