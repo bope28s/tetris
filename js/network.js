@@ -50,6 +50,9 @@ class NetworkManager {
         // 대기 상태 표시를 위한 카운트다운
         this.startWaitingCountdown(waitTime);
         
+        // 참가자 확인 시작
+        setTimeout(() => this.checkForJoiner(), 1000);
+        
         return this.roomCode;
     }
     
@@ -71,13 +74,16 @@ class NetworkManager {
         // 시뮬레이션: 항상 성공으로 처리
         console.log(`방 "${roomCode}" 참가 시뮬레이션 성공`);
         
+        // 실제 방 참가 처리 - 호스트에게 알림
+        this.notifyHostOfJoin(roomCode);
+        
         // 연결 성공 시뮬레이션 (약간의 지연 후)
         setTimeout(() => {
             this.isConnected = true;
             if (this.onConnectionEstablished) {
                 this.onConnectionEstablished();
             }
-        }, 1000);
+        }, 2000);
         
         return true;
     }
@@ -225,6 +231,58 @@ class NetworkManager {
         }, 1000);
         
         this.countdownInterval = countdown;
+    }
+    
+    // 호스트에게 참가 알림
+    notifyHostOfJoin(roomCode) {
+        const joinData = {
+            type: 'player_joined',
+            roomCode: roomCode,
+            timestamp: Date.now(),
+            playerId: 'guest_' + Math.random().toString(36).substr(2, 5)
+        };
+        
+        // localStorage를 통해 호스트에게 알림
+        localStorage.setItem(`tetris_join_${roomCode}`, JSON.stringify(joinData));
+        console.log('호스트에게 참가 알림 전송:', joinData);
+        
+        // 5분 후 자동 삭제
+        setTimeout(() => {
+            localStorage.removeItem(`tetris_join_${roomCode}`);
+        }, 5 * 60 * 1000);
+    }
+    
+    // 참가자 확인 (호스트용)
+    checkForJoiner() {
+        if (!this.isHost || !this.roomCode) return;
+        
+        const joinKey = `tetris_join_${this.roomCode}`;
+        const joinData = localStorage.getItem(joinKey);
+        
+        if (joinData) {
+            const data = JSON.parse(joinData);
+            console.log('참가자 발견:', data);
+            
+            // 참가자 데이터 삭제
+            localStorage.removeItem(joinKey);
+            
+            // 대기 타이머 취소
+            if (this.waitingTimeout) {
+                clearTimeout(this.waitingTimeout);
+            }
+            if (this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+            }
+            
+            // 즉시 연결
+            this.isConnected = true;
+            if (this.onConnectionEstablished) {
+                this.onConnectionEstablished();
+            }
+        } else {
+            // 1초 후 다시 확인
+            setTimeout(() => this.checkForJoiner(), 1000);
+        }
     }
     
     // 연결 종료
