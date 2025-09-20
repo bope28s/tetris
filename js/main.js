@@ -265,6 +265,12 @@ class TetrisApp {
             return;
         }
         
+        // 로딩 표시
+        const joinBtn = document.getElementById('join-room-btn');
+        const originalText = joinBtn.textContent;
+        joinBtn.textContent = '연결 중...';
+        joinBtn.disabled = true;
+        
         try {
             if (!window.networkManager) {
                 window.networkManager = new NetworkManager();
@@ -273,7 +279,11 @@ class TetrisApp {
             await window.networkManager.joinRoom(roomCode);
             
             window.networkManager.setConnectionCallbacks(
-                () => this.startMultiplayerGame(),
+                () => {
+                    joinBtn.textContent = originalText;
+                    joinBtn.disabled = false;
+                    this.startMultiplayerGame();
+                },
                 () => this.handleConnectionLost()
             );
             
@@ -281,7 +291,12 @@ class TetrisApp {
                 this.handleNetworkMessage(data);
             });
             
+            // 성공 메시지
+            alert(`🎮 방 "${roomCode}"에 참가했습니다!\n(시뮬레이션 모드: AI 상대방과 대전)`);
+            
         } catch (error) {
+            joinBtn.textContent = originalText;
+            joinBtn.disabled = false;
             alert('게임 참가에 실패했습니다: ' + error.message);
         }
     }
@@ -474,7 +489,7 @@ function showScreen(screenId) {
     }
 }
 
-// 애플리케이션 초기화
+// 애플리케이션 초기화 (각 탭/창별로 독립적)
 let tetrisApp;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -482,7 +497,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     try {
         console.log('📝 TetrisApp 클래스 생성 시도...');
+        
+        // 각 브라우저 탭/창마다 독립적인 인스턴스 생성
+        const sessionId = 'tetris_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        console.log('🆔 세션 ID:', sessionId);
+        
         tetrisApp = new TetrisApp();
+        tetrisApp.sessionId = sessionId;
         console.log('✅ TetrisApp 초기화 완료');
         
         // 오디오 매니저 초기화

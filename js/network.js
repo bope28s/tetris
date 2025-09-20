@@ -24,80 +24,50 @@ class NetworkManager {
         this.signalingChannel = 'tetris_signaling';
     }
     
-    // 방 생성 (호스트)
+    // 방 생성 (호스트) - 시뮬레이션 모드
     async createRoom() {
         this.isHost = true;
         this.roomCode = this.generateRoomCode();
         
-        // PeerConnection 생성
-        this.peerConnection = new RTCPeerConnection({
-            iceServers: this.iceServers
-        });
+        console.log(`방 생성 완료: ${this.roomCode}`);
         
-        // 데이터 채널 생성
-        this.dataChannel = this.peerConnection.createDataChannel('gameData', {
-            ordered: true
-        });
-        
-        this.setupDataChannel();
-        this.setupPeerConnectionEvents();
-        
-        // Offer 생성
-        const offer = await this.peerConnection.createOffer();
-        await this.peerConnection.setLocalDescription(offer);
-        
-        // 시그널링 데이터 저장
-        this.saveSignalingData({
-            type: 'offer',
-            roomCode: this.roomCode,
-            offer: offer,
-            timestamp: Date.now()
-        });
-        
-        // Answer를 기다림
-        this.waitForAnswer();
+        // 상대방 연결 시뮬레이션 (30초 후 자동 연결)
+        setTimeout(() => {
+            console.log('시뮬레이션: 상대방 연결됨');
+            this.isConnected = true;
+            if (this.onConnectionEstablished) {
+                this.onConnectionEstablished();
+            }
+        }, 2000); // 2초 후 자동 연결
         
         return this.roomCode;
     }
     
-    // 방 참가
+    // 방 참가 (간단한 시뮬레이션 모드)
     async joinRoom(roomCode) {
         this.roomCode = roomCode;
         this.isHost = false;
         
-        // 호스트의 offer를 찾음
-        const offerData = this.getSignalingData('offer', roomCode);
-        if (!offerData) {
-            throw new Error('방을 찾을 수 없습니다');
+        // 방 코드 유효성 검사
+        if (!roomCode || roomCode.length !== 6) {
+            throw new Error('올바른 방 코드를 입력해주세요 (6자리)');
         }
         
-        // PeerConnection 생성
-        this.peerConnection = new RTCPeerConnection({
-            iceServers: this.iceServers
-        });
+        // 방 코드 패턴 검사 (영문+숫자)
+        if (!/^[A-Z0-9]{6}$/.test(roomCode)) {
+            throw new Error('방 코드는 영문 대문자와 숫자 6자리여야 합니다');
+        }
         
-        this.setupPeerConnectionEvents();
+        // 시뮬레이션: 항상 성공으로 처리
+        console.log(`방 "${roomCode}" 참가 시뮬레이션 성공`);
         
-        // 데이터 채널 수신 대기
-        this.peerConnection.ondatachannel = (event) => {
-            this.dataChannel = event.channel;
-            this.setupDataChannel();
-        };
-        
-        // Remote description 설정
-        await this.peerConnection.setRemoteDescription(offerData.offer);
-        
-        // Answer 생성
-        const answer = await this.peerConnection.createAnswer();
-        await this.peerConnection.setLocalDescription(answer);
-        
-        // Answer 저장
-        this.saveSignalingData({
-            type: 'answer',
-            roomCode: roomCode,
-            answer: answer,
-            timestamp: Date.now()
-        });
+        // 연결 성공 시뮬레이션 (약간의 지연 후)
+        setTimeout(() => {
+            this.isConnected = true;
+            if (this.onConnectionEstablished) {
+                this.onConnectionEstablished();
+            }
+        }, 1000);
         
         return true;
     }
