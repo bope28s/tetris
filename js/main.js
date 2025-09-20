@@ -6,13 +6,22 @@ class TetrisApp {
         this.singlePlayerGame = null;
         this.multiplayerGames = null;
         
+        // 고유 세션 ID 생성
+        this.sessionId = 'tetris_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        console.log('🆔 TetrisApp 세션 ID:', this.sessionId);
+        
+        // 이벤트 핸들러들을 인스턴스 변수로 저장
+        this.singlePlayerHandler = null;
+        this.multiPlayerHandler = null;
+        
         this.initializeEventListeners();
         this.setupTouchControls();
+        this.startButtonHealthCheck();
     }
     
     // 이벤트 리스너 초기화
     initializeEventListeners() {
-        console.log('🔗 이벤트 리스너 초기화 시작');
+        console.log('🔗 이벤트 리스너 초기화 시작 - 세션:', this.sessionId);
         
         // 메뉴 버튼들
         const singleBtn = document.getElementById('single-player-btn');
@@ -20,30 +29,72 @@ class TetrisApp {
         
         if (singleBtn) {
             console.log('✅ single-player-btn 찾음');
-            singleBtn.addEventListener('click', (e) => {
+            
+            // 기존 이벤트 리스너 제거 (중복 방지)
+            singleBtn.removeEventListener('click', this.singlePlayerHandler);
+            
+            // 새로운 이벤트 리스너 추가
+            this.singlePlayerHandler = (e) => {
                 e.preventDefault();
-                console.log('🎯 1인 플레이 버튼 클릭됨');
+                e.stopPropagation();
+                console.log('🎯 1인 플레이 버튼 클릭됨 - 세션:', this.sessionId);
+                
+                // 버튼 비활성화 방지
+                singleBtn.disabled = false;
+                singleBtn.style.pointerEvents = 'auto';
+                singleBtn.style.opacity = '1';
+                
                 try {
                     this.startSinglePlayer();
                 } catch (error) {
                     console.error('1인 플레이 시작 오류:', error);
                 }
-            });
+            };
+            
+            singleBtn.addEventListener('click', this.singlePlayerHandler);
+            
+            // 버튼 상태 강제 활성화
+            singleBtn.disabled = false;
+            singleBtn.style.pointerEvents = 'auto';
+            singleBtn.style.opacity = '1';
+            singleBtn.style.cursor = 'pointer';
+            
         } else {
             console.error('❌ single-player-btn을 찾을 수 없음');
         }
         
         if (multiBtn) {
             console.log('✅ multiplayer-btn 찾음');
-            multiBtn.addEventListener('click', (e) => {
+            
+            // 기존 이벤트 리스너 제거 (중복 방지)
+            multiBtn.removeEventListener('click', this.multiPlayerHandler);
+            
+            // 새로운 이벤트 리스너 추가
+            this.multiPlayerHandler = (e) => {
                 e.preventDefault();
-                console.log('🎯 2인 플레이 버튼 클릭됨');
+                e.stopPropagation();
+                console.log('🎯 2인 플레이 버튼 클릭됨 - 세션:', this.sessionId);
+                
+                // 버튼 비활성화 방지
+                multiBtn.disabled = false;
+                multiBtn.style.pointerEvents = 'auto';
+                multiBtn.style.opacity = '1';
+                
                 try {
                     this.showMultiplayerMenu();
                 } catch (error) {
                     console.error('2인 플레이 시작 오류:', error);
                 }
-            });
+            };
+            
+            multiBtn.addEventListener('click', this.multiPlayerHandler);
+            
+            // 버튼 상태 강제 활성화
+            multiBtn.disabled = false;
+            multiBtn.style.pointerEvents = 'auto';
+            multiBtn.style.opacity = '1';
+            multiBtn.style.cursor = 'pointer';
+            
         } else {
             console.error('❌ multiplayer-btn을 찾을 수 없음');
         }
@@ -451,6 +502,42 @@ class TetrisApp {
         
         showScreen('menu-screen');
     }
+    
+    // 버튼 상태 건강 체크 (다른 탭의 간섭 방지)
+    startButtonHealthCheck() {
+        console.log('🔍 버튼 상태 건강 체크 시작 - 세션:', this.sessionId);
+        
+        setInterval(() => {
+            const singleBtn = document.getElementById('single-player-btn');
+            const multiBtn = document.getElementById('multiplayer-btn');
+            
+            if (singleBtn) {
+                // 버튼이 비활성화되어 있다면 강제로 활성화
+                if (singleBtn.disabled || singleBtn.style.pointerEvents === 'none' || 
+                    singleBtn.style.opacity === '0' || singleBtn.style.opacity === '0.5') {
+                    
+                    console.log('🔧 1인 플레이 버튼 강제 활성화 - 세션:', this.sessionId);
+                    singleBtn.disabled = false;
+                    singleBtn.style.pointerEvents = 'auto';
+                    singleBtn.style.opacity = '1';
+                    singleBtn.style.cursor = 'pointer';
+                }
+            }
+            
+            if (multiBtn) {
+                // 버튼이 비활성화되어 있다면 강제로 활성화
+                if (multiBtn.disabled || multiBtn.style.pointerEvents === 'none' || 
+                    multiBtn.style.opacity === '0' || multiBtn.style.opacity === '0.5') {
+                    
+                    console.log('🔧 2인 플레이 버튼 강제 활성화 - 세션:', this.sessionId);
+                    multiBtn.disabled = false;
+                    multiBtn.style.pointerEvents = 'auto';
+                    multiBtn.style.opacity = '1';
+                    multiBtn.style.cursor = 'pointer';
+                }
+            }
+        }, 1000); // 1초마다 체크
+    }
 }
 
 // 화면 전환 함수
@@ -499,11 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('📝 TetrisApp 클래스 생성 시도...');
         
         // 각 브라우저 탭/창마다 독립적인 인스턴스 생성
-        const sessionId = 'tetris_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        console.log('🆔 세션 ID:', sessionId);
-        
         tetrisApp = new TetrisApp();
-        tetrisApp.sessionId = sessionId;
         console.log('✅ TetrisApp 초기화 완료');
         
         // 오디오 매니저 초기화
