@@ -12,7 +12,12 @@ class TetrisGame {
         // 게임 보드 설정
         this.BOARD_WIDTH = 10;
         this.BOARD_HEIGHT = 20;
-        this.CELL_SIZE = canvas.width / this.BOARD_WIDTH;
+        
+        // 캔버스 크기 정규화 및 CELL_SIZE 계산
+        this.normalizeCanvasSize();
+        this.CELL_SIZE = this.canvas.width / this.BOARD_WIDTH;
+        
+        console.log(`캔버스 크기: ${this.canvas.width}x${this.canvas.height}, CELL_SIZE: ${this.CELL_SIZE}`);
         
         // 게임 상태
         this.board = [];
@@ -40,6 +45,39 @@ class TetrisGame {
         
         this.initBoard();
         this.setupEventListeners();
+    }
+    
+    // 캔버스 크기 정규화
+    normalizeCanvasSize() {
+        // 멀티플레이어와 싱글플레이어에 따른 적절한 크기 설정
+        if (this.isMultiplayer) {
+            // 멀티플레이어: 작은 캔버스
+            this.canvas.width = 250;
+            this.canvas.height = 500;
+            if (this.nextCanvas) {
+                this.nextCanvas.width = 80;
+                this.nextCanvas.height = 80;
+            }
+        } else {
+            // 싱글플레이어: 큰 캔버스
+            this.canvas.width = 300;
+            this.canvas.height = 600;
+            if (this.nextCanvas) {
+                this.nextCanvas.width = 120;
+                this.nextCanvas.height = 120;
+            }
+        }
+        
+        // 캔버스 스타일도 동기화
+        this.canvas.style.width = this.canvas.width + 'px';
+        this.canvas.style.height = this.canvas.height + 'px';
+        
+        if (this.nextCanvas) {
+            this.nextCanvas.style.width = this.nextCanvas.width + 'px';
+            this.nextCanvas.style.height = this.nextCanvas.height + 'px';
+        }
+        
+        console.log(`캔버스 정규화 완료 - 멀티플레이어: ${this.isMultiplayer}, 크기: ${this.canvas.width}x${this.canvas.height}`);
     }
     
     // 게임 보드 초기화
@@ -135,6 +173,11 @@ class TetrisGame {
     start() {
         try {
             console.log('게임 시작 중...');
+            
+            // 캔버스 크기 재정규화 (다른 탭의 영향 방지)
+            this.normalizeCanvasSize();
+            this.CELL_SIZE = this.canvas.width / this.BOARD_WIDTH;
+            console.log(`게임 시작 시 CELL_SIZE 재계산: ${this.CELL_SIZE}`);
             
             this.initBoard();
             this.score = 0;

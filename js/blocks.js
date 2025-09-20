@@ -242,7 +242,13 @@ function drawBlock(ctx, block, cellSize, offsetX = 0, offsetY = 0, ghost = false
 
 // 3D 입체감 블록 그리기
 function draw3DBlock(ctx, x, y, size, color) {
-    const bevelSize = Math.max(2, size * 0.1);
+    // 크기 유효성 검사
+    if (size <= 0 || !isFinite(size)) {
+        console.warn('잘못된 블록 크기:', size);
+        size = 30; // 기본값
+    }
+    
+    const bevelSize = Math.max(1, Math.min(size * 0.15, 5)); // 베벨 크기 제한
     
     // 메인 블록 면
     ctx.fillStyle = color;
