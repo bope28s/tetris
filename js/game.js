@@ -13,6 +13,10 @@ class TetrisGame {
         this.BOARD_WIDTH = 10;
         this.BOARD_HEIGHT = 20;
         
+        // 고유 인스턴스 ID 생성 (간섭 방지)
+        this.instanceId = `tetris_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+        console.log(`🆔 TetrisGame 인스턴스 생성: ${this.instanceId}, 플레이어: ${this.playerId}`);
+        
         // 캔버스 크기 정규화 및 CELL_SIZE 계산
         this.normalizeCanvasSize();
         this.CELL_SIZE = this.canvas.width / this.BOARD_WIDTH;
@@ -308,7 +312,7 @@ class TetrisGame {
         }
         
         if (!this.nextBlock) {
-            this.nextBlock = getRandomBlock();
+            this.nextBlock = this.getRandomBlockSafe();
         }
         
         this.currentBlock = this.nextBlock;
@@ -316,7 +320,7 @@ class TetrisGame {
         this.currentBlock.y = 0;
         
         // 새로운 다음 블록 생성
-        this.nextBlock = getRandomBlock();
+        this.nextBlock = this.getRandomBlockSafe();
         
         console.log(`새 블록 스폰: ${this.currentBlock.type} at (${this.currentBlock.x}, ${this.currentBlock.y})`);
         console.log(`다음 블록: ${this.nextBlock.type}`);
@@ -328,6 +332,22 @@ class TetrisGame {
         }
         
         this.drawNextBlock();
+    }
+    
+    // 안전한 랜덤 블록 생성 (인스턴스별 독립)
+    getRandomBlockSafe() {
+        const BLOCK_TYPES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+        const type = BLOCK_TYPES[Math.floor(Math.random() * BLOCK_TYPES.length)];
+        const block = new TetrisBlock(type);
+        
+        // 블록 유효성 검사
+        if (!block.shape || !block.color) {
+            console.error(`${this.instanceId}: 잘못된 블록 생성:`, type);
+            return new TetrisBlock('I'); // 기본 블록 반환
+        }
+        
+        console.log(`${this.instanceId}: 새 블록 생성: ${type}, 회전 상태: ${block.rotation}`);
+        return block;
     }
     
     // 고스트 블록 업데이트
@@ -734,9 +754,9 @@ class TetrisGame {
         
         // 고스트 블록 제거됨
         
-        // 현재 블록 그리기
+        // 현재 블록 그리기 (인스턴스별 독립 렌더링)
         if (this.currentBlock) {
-            drawBlock(this.ctx, this.currentBlock, this.CELL_SIZE);
+            this.drawBlockSafe(this.currentBlock);
         }
     }
     
@@ -772,9 +792,73 @@ class TetrisGame {
                     const x = col * this.CELL_SIZE;
                     const y = row * this.CELL_SIZE;
                     
-                    draw3DBlock(this.ctx, x, y, this.CELL_SIZE, this.board[row][col]);
+                    this.draw3DBlockSafe(x, y, this.CELL_SIZE, this.board[row][col]);
                 }
             }
+        }
+    }
+    
+    // 안전한 블록 그리기 (인스턴스별 독립)
+    drawBlockSafe(block) {
+        const shape = block.getCurrentShape();
+        
+        for (let row = 0; row < shape.length; row++) {
+            for (let col = 0; col < shape[row].length; col++) {
+                if (shape[row][col]) {
+                    const x = (block.x + col) * this.CELL_SIZE;
+                    const y = (block.y + row) * this.CELL_SIZE;
+                    
+                    this.draw3DBlockSafe(x, y, this.CELL_SIZE, block.color);
+                }
+            }
+        }
+    }
+    
+    // 안전한 3D 블록 그리기 (인스턴스별 독립)
+    draw3DBlockSafe(x, y, size, color) {
+        // 크기 유효성 검사
+        if (size <= 0 || !isFinite(size)) {
+            console.warn(`${this.instanceId}: 잘못된 블록 크기:`, size);
+            size = 30; // 기본값
+        }
+        
+        const bevelSize = Math.max(1, Math.min(size * 0.15, 5));
+        
+        // 캔버스 컨텍스트 상태 저장
+        this.ctx.save();
+        
+        try {
+            // 메인 블록 면
+            this.ctx.fillStyle = color;
+            this.ctx.fillRect(x, y, size, size);
+            
+            // 상단 하이라이트 (밝은 면)
+            const lightColor = this.lightenColor(color, 0.3);
+            this.ctx.fillStyle = lightColor;
+            this.ctx.fillRect(x, y, size, bevelSize);
+            this.ctx.fillRect(x, y, bevelSize, size);
+            
+            // 하단/우측 그림자 (어두운 면)
+            const shadowColor = this.darkenColor(color, 0.3);
+            this.ctx.fillStyle = shadowColor;
+            this.ctx.fillRect(x, y + size - bevelSize, size, bevelSize);
+            this.ctx.fillRect(x + size - bevelSize, y, bevelSize, size);
+            
+            // 테두리
+            this.ctx.strokeStyle = this.darkenColor(color, 0.5);
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(x, y, size, size);
+            
+            // 내부 하이라이트
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            this.ctx.fillRect(x + bevelSize, y + bevelSize, size - bevelSize * 2, 1);
+            this.ctx.fillRect(x + bevelSize, y + bevelSize, 1, size - bevelSize * 2);
+            
+        } catch (error) {
+            console.error(`${this.instanceId}: 블록 렌더링 오류:`, error);
+        } finally {
+            // 캔버스 컨텍스트 상태 복원
+            this.ctx.restore();
         }
     }
     
@@ -799,7 +883,53 @@ class TetrisGame {
         this.nextCtx.msImageSmoothingEnabled = false;
         
         console.log(`다음 블록 그리기: ${this.nextBlock.type}, 셀 크기: ${cellSize}`);
-        drawMiniBlock(this.nextCtx, this.nextBlock, cellSize, centerX, centerY);
+        this.drawMiniBlockSafe(this.nextBlock, cellSize, centerX, centerY);
+    }
+    
+    // 안전한 미니 블록 그리기 (인스턴스별 독립)
+    drawMiniBlockSafe(block, cellSize, centerX, centerY) {
+        if (!this.nextCtx) return;
+        
+        const shape = block.getCurrentShape();
+        
+        // 블록의 실제 크기 계산
+        let minX = 4, maxX = -1, minY = 4, maxY = -1;
+        for (let row = 0; row < shape.length; row++) {
+            for (let col = 0; col < shape[row].length; col++) {
+                if (shape[row][col]) {
+                    minX = Math.min(minX, col);
+                    maxX = Math.max(maxX, col);
+                    minY = Math.min(minY, row);
+                    maxY = Math.max(maxY, row);
+                }
+            }
+        }
+        
+        const blockWidth = (maxX - minX + 1) * cellSize;
+        const blockHeight = (maxY - minY + 1) * cellSize;
+        const startX = centerX - blockWidth / 2;
+        const startY = centerY - blockHeight / 2;
+        
+        // 캔버스 컨텍스트 상태 저장
+        this.nextCtx.save();
+        
+        try {
+            for (let row = minY; row <= maxY; row++) {
+                for (let col = minX; col <= maxX; col++) {
+                    if (shape[row][col]) {
+                        const x = startX + (col - minX) * cellSize;
+                        const y = startY + (row - minY) * cellSize;
+                        
+                        this.draw3DBlockSafe(x, y, cellSize, block.color);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`${this.instanceId}: 미니 블록 렌더링 오류:`, error);
+        } finally {
+            // 캔버스 컨텍스트 상태 복원
+            this.nextCtx.restore();
+        }
     }
     
     // 점수 업데이트
