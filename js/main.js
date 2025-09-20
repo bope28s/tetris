@@ -290,7 +290,7 @@ class TetrisApp {
             window.networkManager.setConnectionCallbacks(
                 () => {
                     console.log('상대방 연결됨! 게임 시작');
-                    alert('🎮 상대방이 연결되었습니다! 게임을 시작합니다.');
+                    alert('🎮 시뮬레이션 모드 시작!\n\n현재는 AI 상대방과 대전합니다.\n실제 친구와 플레이하려면 WebSocket 서버가 필요합니다.');
                     this.startMultiplayerGame();
                 },
                 () => this.handleConnectionLost()
@@ -347,7 +347,7 @@ class TetrisApp {
             });
             
             // 성공 메시지
-            alert(`🎮 방 "${roomCode}"에 참가했습니다!\n(시뮬레이션 모드: AI 상대방과 대전)`);
+            alert(`🎮 방 "${roomCode}"에 참가했습니다!\n\n📱 현재 시뮬레이션 모드입니다:\n- AI 상대방과 대전\n- 실제 P2P 연결은 WebSocket 서버가 필요합니다`);
             
         } catch (error) {
             joinBtn.textContent = originalText;

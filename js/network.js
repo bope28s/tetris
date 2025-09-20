@@ -47,16 +47,33 @@ class NetworkManager {
             }
         }, waitTime);
         
+        // 간단한 시뮬레이션: 5초 후 자동으로 "상대방 참가" 시뮬레이션
+        setTimeout(() => {
+            if (!this.isConnected) {
+                console.log('🤖 시뮬레이션: 5초 후 상대방 자동 참가');
+                
+                // 대기 타이머들 취소
+                if (this.waitingTimeout) {
+                    clearTimeout(this.waitingTimeout);
+                }
+                if (this.countdownInterval) {
+                    clearInterval(this.countdownInterval);
+                }
+                
+                this.isConnected = true;
+                if (this.onConnectionEstablished) {
+                    this.onConnectionEstablished();
+                }
+            }
+        }, 5000); // 5초 후 자동 연결
+        
         // 대기 상태 표시를 위한 카운트다운
         this.startWaitingCountdown(waitTime);
-        
-        // 참가자 확인 시작
-        setTimeout(() => this.checkForJoiner(), 1000);
         
         return this.roomCode;
     }
     
-    // 방 참가 (간단한 시뮬레이션 모드)
+    // 방 참가 (즉시 연결 모드)
     async joinRoom(roomCode) {
         this.roomCode = roomCode;
         this.isHost = false;
@@ -71,19 +88,16 @@ class NetworkManager {
             throw new Error('방 코드는 영문 대문자와 숫자 6자리여야 합니다');
         }
         
-        // 시뮬레이션: 항상 성공으로 처리
-        console.log(`방 "${roomCode}" 참가 시뮬레이션 성공`);
+        console.log(`방 "${roomCode}" 참가 성공`);
         
-        // 실제 방 참가 처리 - 호스트에게 알림
-        this.notifyHostOfJoin(roomCode);
-        
-        // 연결 성공 시뮬레이션 (약간의 지연 후)
+        // 즉시 연결 성공 처리 (실제 P2P 대신 시뮬레이션)
         setTimeout(() => {
             this.isConnected = true;
+            console.log('게스트 연결 완료');
             if (this.onConnectionEstablished) {
                 this.onConnectionEstablished();
             }
-        }, 2000);
+        }, 1000);
         
         return true;
     }
@@ -233,56 +247,11 @@ class NetworkManager {
         this.countdownInterval = countdown;
     }
     
-    // 호스트에게 참가 알림
-    notifyHostOfJoin(roomCode) {
-        const joinData = {
-            type: 'player_joined',
-            roomCode: roomCode,
-            timestamp: Date.now(),
-            playerId: 'guest_' + Math.random().toString(36).substr(2, 5)
-        };
-        
-        // localStorage를 통해 호스트에게 알림
-        localStorage.setItem(`tetris_join_${roomCode}`, JSON.stringify(joinData));
-        console.log('호스트에게 참가 알림 전송:', joinData);
-        
-        // 5분 후 자동 삭제
-        setTimeout(() => {
-            localStorage.removeItem(`tetris_join_${roomCode}`);
-        }, 5 * 60 * 1000);
-    }
-    
-    // 참가자 확인 (호스트용)
-    checkForJoiner() {
-        if (!this.isHost || !this.roomCode) return;
-        
-        const joinKey = `tetris_join_${this.roomCode}`;
-        const joinData = localStorage.getItem(joinKey);
-        
-        if (joinData) {
-            const data = JSON.parse(joinData);
-            console.log('참가자 발견:', data);
-            
-            // 참가자 데이터 삭제
-            localStorage.removeItem(joinKey);
-            
-            // 대기 타이머 취소
-            if (this.waitingTimeout) {
-                clearTimeout(this.waitingTimeout);
-            }
-            if (this.countdownInterval) {
-                clearInterval(this.countdownInterval);
-            }
-            
-            // 즉시 연결
-            this.isConnected = true;
-            if (this.onConnectionEstablished) {
-                this.onConnectionEstablished();
-            }
-        } else {
-            // 1초 후 다시 확인
-            setTimeout(() => this.checkForJoiner(), 1000);
-        }
+    // 간단한 방 참가 확인 (시뮬레이션)
+    simulateRoomConnection() {
+        console.log('🎮 2인 플레이 시뮬레이션 모드');
+        console.log('실제 환경에서는 WebSocket 서버가 필요합니다');
+        console.log('현재는 데모 목적으로 AI 상대방과 대전합니다');
     }
     
     // 연결 종료
