@@ -20,9 +20,14 @@ class TetrisApp {
         
         if (singleBtn) {
             console.log('✅ single-player-btn 찾음');
-            singleBtn.addEventListener('click', () => {
+            singleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 console.log('🎯 1인 플레이 버튼 클릭됨');
-                this.startSinglePlayer();
+                try {
+                    this.startSinglePlayer();
+                } catch (error) {
+                    console.error('1인 플레이 시작 오류:', error);
+                }
             });
         } else {
             console.error('❌ single-player-btn을 찾을 수 없음');
@@ -30,9 +35,14 @@ class TetrisApp {
         
         if (multiBtn) {
             console.log('✅ multiplayer-btn 찾음');
-            multiBtn.addEventListener('click', () => {
+            multiBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 console.log('🎯 2인 플레이 버튼 클릭됨');
-                this.showMultiplayerMenu();
+                try {
+                    this.showMultiplayerMenu();
+                } catch (error) {
+                    console.error('2인 플레이 시작 오류:', error);
+                }
             });
         } else {
             console.error('❌ multiplayer-btn을 찾을 수 없음');
@@ -430,14 +440,34 @@ class TetrisApp {
 
 // 화면 전환 함수
 function showScreen(screenId) {
-    const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    const targetScreen = document.getElementById(screenId);
-    if (targetScreen) {
-        targetScreen.classList.add('active');
+    try {
+        console.log(`🔄 화면 전환 시도: ${screenId}`);
+        
+        const screens = document.querySelectorAll('.screen');
+        console.log(`📱 찾은 화면 개수: ${screens.length}`);
+        
+        screens.forEach(screen => {
+            screen.classList.remove('active');
+            screen.style.display = 'none';
+            screen.style.opacity = '0';
+            screen.style.visibility = 'hidden';
+            console.log(`  - ${screen.id} 비활성화`);
+        });
+        
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) {
+            targetScreen.classList.add('active');
+            console.log(`✅ ${screenId} 활성화 완료`);
+            
+            // 강제로 스타일 적용
+            targetScreen.style.display = 'flex';
+            targetScreen.style.opacity = '1';
+            targetScreen.style.visibility = 'visible';
+        } else {
+            console.error(`❌ 화면을 찾을 수 없음: ${screenId}`);
+        }
+    } catch (error) {
+        console.error('화면 전환 오류:', error);
     }
 }
 

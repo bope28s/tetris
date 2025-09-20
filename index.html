@@ -80,9 +80,15 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
         }
         
-        /* 다른 화면들 숨기기 */
-        .screen:not(#menu-screen) {
+        /* 화면 전환 준비 */
+        .screen {
+            transition: all 0.3s ease !important;
+        }
+        
+        .screen:not(.active) {
             display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
         }
     </style>
 </head>
