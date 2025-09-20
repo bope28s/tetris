@@ -492,8 +492,13 @@ class TetrisGame {
         
         // 약간의 지연을 두고 새 블록 생성 (렌더링 안정화)
         setTimeout(() => {
+            console.log(`${this.instanceId}: 지연 후 블록 생성 체크 - currentBlock: ${this.currentBlock ? this.currentBlock.type : 'null'}, isPlaying: ${this.isPlaying}`);
+            
             if (!this.currentBlock && this.isPlaying) {
+                console.log(`${this.instanceId}: 지연 후 새 블록 생성 시작`);
                 this.spawnNewBlock();
+            } else if (this.currentBlock) {
+                console.warn(`${this.instanceId}: 지연 후에도 블록이 이미 존재함: ${this.currentBlock.type}`);
             }
         }, 50);
         
@@ -863,7 +868,25 @@ class TetrisGame {
     
     // 안전한 블록 그리기 (인스턴스별 독립)
     drawBlockSafe(block) {
+        if (!block) {
+            console.warn(`${this.instanceId}: drawBlockSafe - 블록이 null임`);
+            return;
+        }
+        
+        // 블록 상태 검증
+        if (!block.type || !block.getCurrentShape) {
+            console.error(`${this.instanceId}: 잘못된 블록 객체:`, block);
+            return;
+        }
+        
         const shape = block.getCurrentShape();
+        if (!shape) {
+            console.error(`${this.instanceId}: 블록 모양을 가져올 수 없음:`, block.type);
+            return;
+        }
+        
+        // 현재 그리고 있는 블록 정보 로깅 (간헐적 버그 추적용)
+        console.log(`${this.instanceId}: 블록 렌더링 - 타입: ${block.type}, 위치: (${block.x}, ${block.y}), 회전: ${block.rotation}`);
         
         for (let row = 0; row < shape.length; row++) {
             for (let col = 0; col < shape[row].length; col++) {

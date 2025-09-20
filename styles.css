@@ -379,11 +379,20 @@ body:not(.css-loaded) {
         left: auto;
         transform: none;
         margin-top: 1rem;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+        max-width: 100% !important;
     }
     
     .control-btn {
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
+        padding: 0.5rem 0.8rem !important;
+        font-size: 0.8rem !important;
+        flex: 1 1 auto !important;
+        min-width: 70px !important;
+        max-width: 90px !important;
+        white-space: nowrap !important;
     }
 }
 
@@ -405,6 +414,18 @@ body:not(.css-loaded) {
     .player-area canvas {
         width: 150px;
         height: 300px;
+    }
+    
+    .game-controls {
+        gap: 0.3rem !important;
+        padding: 0 10px !important;
+    }
+    
+    .control-btn {
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.7rem !important;
+        min-width: 60px !important;
+        max-width: 80px !important;
     }
 }
 
