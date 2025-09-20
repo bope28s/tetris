@@ -22,7 +22,7 @@
             min-height: 100vh !important;
         }
         
-        #menu-screen {
+        #menu-screen.active {
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
@@ -34,6 +34,10 @@
             z-index: 9999 !important;
             opacity: 1 !important;
             visibility: visible !important;
+        }
+        
+        #menu-screen:not(.active) {
+            display: none !important;
         }
         
         .menu-container {
@@ -89,6 +93,53 @@
             display: none !important;
             opacity: 0 !important;
             visibility: hidden !important;
+        }
+        
+        /* 게임 화면 스타일 */
+        #game-screen.active {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+            height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 9999 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            padding: 20px !important;
+            overflow-y: auto !important;
+        }
+        
+        /* 멀티플레이어 화면 스타일 */
+        #multiplayer-screen.active {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
+            height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 9999 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        /* 게임 오버 화면 스타일 */
+        #game-over-screen.active {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
+            height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 9999 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
     </style>
 </head>
